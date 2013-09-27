@@ -1,0 +1,22 @@
+{
+  "name": "component-script-builder",
+  "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/gocardless-client/component-script-builder.git"
+  },
+  "dependencies": {
+    "glob": "~3.2.6",
+    "generate-angular-template": "git://github.com/gocardless-client/generate-angular-template.git",
+    "generate-angular-css-module": "git://github.com/gocardless-client/generate-angular-css-module.git",
+    "html-minifier": "~0.5.4",
+    "clean-css": "~1.1.0",
+    "node-sass": "~0.6.6",
+    "lodash": "~2.1.0",
+    "iconv-lite": "~0.2.11"
+  },
+  "bugs": {
+    "url": "http://github.com/gocardless-client/component-script-builder/issues"
+  },
+  "main": "component-script-builder"
+}
