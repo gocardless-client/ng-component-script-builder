@@ -6,7 +6,7 @@ var fs = require('fs');
 var glob = require('glob');
 var iconv = require('iconv-lite');
 
-var file = {
+var file = module.exports = {
   defaultEncoding: 'utf8'
 };
 
