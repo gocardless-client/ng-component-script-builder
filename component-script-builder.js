@@ -63,45 +63,42 @@ function concatFiles(files) {
   }).join('\n');
 }
 
-/**
- * @param  {Array} files
- * @return {Array}
- */
-function processFileContents(files) {
-  var srcMatches = [{
-    srcMatch: '\\.css$',
-    processContents: function(file) {
-      var minifiedCss = minifyCss(file.contents);
-      file.contents = angularCssModule(file.src, minifiedCss);
-      return file;
-    }
-  },
-  {
-    srcMatch: '\\.scss$',
-    processContents: function(file) {
-      var compiledCss = renderScss(file.contents);
-      file.contents = angularCssModule(file.src, compiledCss);
-      return file;
-    }
-  },
-  {
-    srcMatch: '\\.html$',
-    processContents: function(file) {
-      var minifiedHtml = minifyHtml(file.contents);
-      file.contents = angularTemplate(file.src, minifiedHtml);
-      return file;
-    }
-  }];
+var srcMatches = [{
+  srcMatch: '\\.css$',
+  processContents: function(file) {
+    var minifiedCss = minifyCss(file.contents);
+    file.contents = angularCssModule(file.src, minifiedCss);
+    return file;
+  }
+},
+{
+  srcMatch: '\\.scss$',
+  processContents: function(file) {
+    var compiledCss = renderScss(file.contents);
+    file.contents = angularCssModule(file.src, compiledCss);
+    return file;
+  }
+},
+{
+  srcMatch: '\\.html$',
+  processContents: function(file) {
+    var minifiedHtml = minifyHtml(file.contents);
+    file.contents = angularTemplate(file.src, minifiedHtml);
+    return file;
+  }
+}];
 
+/**
+ * @param  {Object} files
+ * @return {Object}
+ */
+function processFile(file) {
   _.each(srcMatches, function(options) {
     var match = new RegExp(options.srcMatch);
-
-    _.each(files, function(file) {
-      if (file.src.match(match)) { options.processContents(file); }
-    });
+    if (file.src.match(match)) { options.processContents(file); }
   });
 
-  return files;
+  return file;
 }
 
 ////////////////////////////////////////
@@ -122,6 +119,7 @@ function createComponent(options) {
     ],
     process: function process(file) {
       file.src = file.src.replace(options.cwd, '');
+      file = processFile(file);
       return file;
     },
     filter: function filter() {
@@ -132,7 +130,6 @@ function createComponent(options) {
   return _.compose(
     wrapFile,
     concatFiles,
-    processFileContents,
     function processFiles(files) {
       return files.map(options.process);
     },
