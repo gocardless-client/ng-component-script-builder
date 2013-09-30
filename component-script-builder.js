@@ -4,7 +4,7 @@ var file = require('./file');
 
 var _ = require('lodash');
 var path = require('path');
-var os = require('os');
+var fs = require('fs');
 var cleanCSS = require('clean-css');
 var sass = require('node-sass');
 var htmlMinifier = require('html-minifier');
@@ -103,11 +103,7 @@ function processFile(file) {
 
 ////////////////////////////////////////
 
-/**
- * @param  {Object} options
- * @return {Function}
- */
-function createComponent(options) {
+function getPaths(options) {
   options = _.defaults({}, options, {
     cwd: './',
     patterns: [
@@ -117,15 +113,40 @@ function createComponent(options) {
       '*.html',
       '!*spec.js*'
     ],
-    process: function process(file) {
-      file.src = file.src.replace(options.cwd, '');
-      file = processFile(file);
-      return file;
-    },
-    filter: function filter() {
-      return true;
+    process: function process(filepath) {
+      // Prepend cwd to src path if necessary.
+      if (options.cwd) { filepath = path.join(options.cwd, filepath); }
+      return filepath;
     }
   });
+
+  return _.compose(
+    function processFiles(files) {
+      return files.map(options.process);
+    },
+    function expandPatterns() {
+      return file.expand(options.patterns, options);
+    }
+  )();
+}
+
+/**
+ * @param  {Object} options
+ * @return {Function}
+ */
+function createComponentContents(options) {
+  options = _.defaults({}, options, {
+    process: processFile,
+    prependPrefix: '',
+    stripPrefix: '',
+    paths: []
+  });
+
+  var stripPrefix = new RegExp('^' + options.stripPrefix);
+  var prependPrefix = options.prependPrefix;
+  var cacheIdFromPath = options.cacheIdFromPath ||function (filepath) {
+    return prependPrefix + filepath.replace(stripPrefix, '');
+  };
 
   return _.compose(
     wrapFile,
@@ -133,42 +154,64 @@ function createComponent(options) {
     function processFiles(files) {
       return files.map(options.process);
     },
-    function filterFiles(files) {
-      return files.filter(options.filter);
-    },
-    function getFiles() {
-      return file.readPattern(options.patterns, options);
+    function readPaths() {
+      return options.paths.map(function(src) {
+        if (_.isString(src) && src.length > 0) {
+          return {
+            src: cacheIdFromPath(src),
+            contents: file.read(src, options)
+          };
+        }
+      });
     }
-  );
+  )();
 }
 
-/**
- * @param  {String} contents
- * @return {String}
- */
-function writeComponent(contents) {
-  var dir = os.tmpdir();
-  var filename = 'component-' + path.basename(process.cwd()) + '.js';
-  var fullpath = path.join(dir, filename);
-  file.write(fullpath, contents);
-  return fullpath;
+function getComponentFilepath() {
+  var dir = process.cwd();
+  var filename = 'ng-component-' + path.basename(dir) + '.js';
+  return path.join(dir, '.tmp', filename);
+}
+
+function isComponentExpired(fullpath, paths) {
+  if (!file.exists(fullpath)) { return true; }
+
+  var componentMtime = fs.statSync(fullpath).mtime;
+  return paths.map(function(path) {
+    return fs.statSync(path).mtime;
+  }).some(function(mtime) {
+    return mtime > componentMtime;
+  });
 }
 
 /**
  * @param  {Object} options
  * @return {String}
  */
-function createWrite(options) {
-  var componentScript = createComponent(options);
-  var contents = componentScript();
-  var filepath = writeComponent(contents);
-  return filepath;
+function writeComponentContents(options) {
+  options = options || {};
+  var fullpath = options.dest || getComponentFilepath();
+  var paths = getPaths({
+    patterns: options.patterns,
+    cwd: options.cwd
+  });
+
+  if (isComponentExpired(fullpath, paths)) {
+    var contents = createComponentContents({
+      process: options.process,
+      prependPrefix: options.prependPrefix,
+      stripPrefix: options.stripPrefix,
+      paths: paths,
+    });
+    file.write(fullpath, contents);
+  }
+
+  return fullpath;
 }
 
 var componentScriptBuilder = {
-  create: createComponent,
-  write: writeComponent,
-  createWrite: createWrite
+  contents: createComponentContents,
+  write: writeComponentContents
 };
 
 module.exports = componentScriptBuilder;

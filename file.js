@@ -54,7 +54,8 @@ file.read = function read(filepath, options) {
     // If encoding is not explicitly null, convert from encoded buffer to a
     // string. If no encoding was specified, use the default.
     if (options.encoding !== null) {
-      contents = iconv.decode(contents, options.encoding || file.defaultEncoding);
+      contents = iconv.decode(contents,
+        options.encoding || file.defaultEncoding);
       // Strip any BOM that might exist.
       if (contents.charCodeAt(0) === 0xFEFF) {
         contents = contents.substring(1);
@@ -67,19 +68,6 @@ file.read = function read(filepath, options) {
     );
     throw e;
   }
-};
-
-file.readPattern = function readPattern(patterns, options) {
-  // Find all files matching pattern, using passed-in options.
-  return file.expand(patterns, options).map(function(src) {
-    // Prepend cwd to src path if necessary.
-    if (options.cwd) { src = path.join(options.cwd, src); }
-
-    return {
-      src: src,
-      contents: file.read(src)
-    };
-  });
 };
 
 var pathSeparatorRe = /[\/\\]/g;
@@ -124,7 +112,8 @@ file.write = function(filepath, contents, options) {
     // If contents is already a Buffer, don't try to encode it. If no encoding
     // was specified, use the default.
     if (!Buffer.isBuffer(contents)) {
-      contents = iconv.encode(contents, options.encoding || file.defaultEncoding);
+      contents = iconv.encode(contents,
+        options.encoding || file.defaultEncoding);
     }
     fs.writeFileSync(filepath, contents);
     return true;
@@ -134,6 +123,12 @@ file.write = function(filepath, contents, options) {
     );
     throw e;
   }
+};
+
+// True if the file path exists.
+file.exists = function() {
+  var filepath = path.join.apply(path, arguments);
+  return fs.existsSync(filepath);
 };
 
 exports = file;
