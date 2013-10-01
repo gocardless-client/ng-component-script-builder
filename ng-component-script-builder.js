@@ -3,6 +3,7 @@
 var file = require('./file');
 
 var _ = require('lodash');
+var crypto = require('crypto');
 var path = require('path');
 var fs = require('fs');
 var cleanCSS = require('clean-css');
@@ -167,10 +168,22 @@ function createComponentContents(options) {
   )();
 }
 
-function getComponentFilepath() {
-  var dir = process.cwd();
-  var filename = 'ng-component-' + path.basename(dir) + '.js';
-  return path.join(dir, '.tmp', filename);
+/**
+ * @param  {String} src
+ * @param  {Object} options
+ * @return {String}
+ */
+function getComponentFilepath(src, options) {
+  options = _.extend({
+    encoding: 'utf8',
+    algorithm: 'md5',
+    length: 8
+  }, options);
+  var hash = crypto.createHash(options.algorithm)
+    .update(src, options.encoding).digest('hex');
+  var suffix = hash.slice(0, options.length);
+  var filename = 'ng-component-' + suffix + '.js';
+  return path.resolve('.tmp', filename);
 }
 
 function isComponentExpired(fullpath, paths) {
@@ -190,11 +203,11 @@ function isComponentExpired(fullpath, paths) {
  */
 function writeComponentContents(options) {
   options = options || {};
-  var fullpath = options.dest || getComponentFilepath();
   var paths = getPaths({
     patterns: options.patterns,
     cwd: options.cwd
   });
+  var fullpath = getComponentFilepath(paths.join(''));
 
   if (isComponentExpired(fullpath, paths)) {
     var contents = createComponentContents({

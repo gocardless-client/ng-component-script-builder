@@ -1,4 +1,4 @@
-# component-script-builder
+# ng-component-script-builder
 
 ## Copyright and license
 

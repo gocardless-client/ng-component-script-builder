@@ -1,9 +1,9 @@
 {
-  "name": "component-script-builder",
+  "name": "ng-component-script-builder",
   "version": "0.1.0",
   "repository": {
     "type": "git",
-    "url": "git://github.com/gocardless-client/component-script-builder.git"
+    "url": "git://github.com/gocardless-client/ng-component-script-builder.git"
   },
   "dependencies": {
     "glob": "~3.2.6",
@@ -16,7 +16,7 @@
     "iconv-lite": "~0.2.11"
   },
   "bugs": {
-    "url": "http://github.com/gocardless-client/component-script-builder/issues"
+    "url": "http://github.com/gocardless-client/ng-component-script-builder/issues"
   },
-  "main": "component-script-builder"
+  "main": "ng-component-script-builder"
 }
