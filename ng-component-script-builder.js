@@ -183,7 +183,7 @@ function getComponentFilepath(src, options) {
     .update(src, options.encoding).digest('hex');
   var suffix = hash.slice(0, options.length);
   var filename = 'ng-component-' + suffix + '.js';
-  return path.resolve('.tmp', filename);
+  return path.join('.tmp', filename);
 }
 
 function isComponentExpired(fullpath, paths) {
