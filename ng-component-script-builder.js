@@ -93,7 +93,7 @@ var srcMatches = [{
  * @param  {Object} files
  * @return {Object}
  */
-function processFile(file) {
+function processFileContents(file) {
   _.each(srcMatches, function(options) {
     var match = new RegExp(options.srcMatch);
     if (file.src.match(match)) { options.processContents(file); }
@@ -106,15 +106,7 @@ function processFile(file) {
 
 function getPaths(options) {
   options = _.defaults({}, options, {
-    cwd: './',
-    patterns: [
-      '*.js',
-      '*.css',
-      '*.scss',
-      '*.html',
-      '!*spec.js*'
-    ],
-    process: function process(filepath) {
+    processFilePath: function processFilePath(filepath) {
       // Prepend cwd to src path if necessary.
       if (options.cwd) { filepath = path.join(options.cwd, filepath); }
       return filepath;
@@ -123,7 +115,7 @@ function getPaths(options) {
 
   return _.compose(
     function processFiles(files) {
-      return files.map(options.process);
+      return files.map(options.processFilePath);
     },
     function expandPatterns() {
       return file.expand(options.patterns, options);
@@ -136,11 +128,14 @@ function getPaths(options) {
  * @return {Function}
  */
 function createComponentContents(options) {
+  if (!options.paths || !options.paths.length) {
+    throw new Error('no options.paths provided');
+  }
+
   options = _.defaults({}, options, {
-    process: processFile,
     prependPrefix: '',
     stripPrefix: '',
-    paths: []
+    processFileContents: processFileContents,
   });
 
   var stripPrefix = new RegExp('^' + options.stripPrefix);
@@ -152,8 +147,8 @@ function createComponentContents(options) {
   return _.compose(
     wrapFile,
     concatFiles,
-    function processFiles(files) {
-      return files.map(options.process);
+    function mapProcessFileContents(files) {
+      return files.map(options.processFileContents);
     },
     function readPaths() {
       return options.paths.map(function(src) {
@@ -177,12 +172,13 @@ function getComponentFilepath(src, options) {
   options = _.extend({
     encoding: 'utf8',
     algorithm: 'md5',
-    length: 8
+    length: 8,
+    name: 'ng-component-'
   }, options);
   var hash = crypto.createHash(options.algorithm)
     .update(src, options.encoding).digest('hex');
   var suffix = hash.slice(0, options.length);
-  var filename = 'ng-component-' + suffix + '.js';
+  var filename = options.name + '-' + suffix + '.js';
   return path.join('.tmp', filename);
 }
 
@@ -197,21 +193,41 @@ function isComponentExpired(fullpath, paths) {
   });
 }
 
+function writeComponentContentsOptions(options) {
+  options = options || {};
+  if (!options.cwd || !options.cwd.match(/^\//)) {
+    throw new Error('options.cwd has to be absolute');
+  }
+
+  if (!options.patterns || !options.patterns.length) {
+    throw new Error('no options.patterns provided');
+  }
+
+  // StriAdds trailing separator to cwd
+  // cwd './test' -> stripPrefix './test/'
+  if (!('stripPrefix' in options)) {
+    options.stripPrefix = path.join(options.cwd, path.sep);
+  }
+
+  return options;
+}
+
 /**
  * @param  {Object} options
  * @return {String}
  */
 function writeComponentContents(options) {
-  options = options || {};
-  var paths = getPaths({
-    patterns: options.patterns,
-    cwd: options.cwd
+  options = writeComponentContentsOptions(options);
+  var name = path.basename(options.cwd);
+  var paths = getPaths(options);
+
+  var fullpath = getComponentFilepath(paths.join(''), {
+    name: name
   });
-  var fullpath = getComponentFilepath(paths.join(''));
 
   if (isComponentExpired(fullpath, paths)) {
     var contents = createComponentContents({
-      process: options.process,
+      processFileContents: options.processFileContents,
       prependPrefix: options.prependPrefix,
       stripPrefix: options.stripPrefix,
       paths: paths,
