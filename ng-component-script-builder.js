@@ -235,6 +235,7 @@ function writeComponentContents(options) {
     file.write(fullpath, contents);
   }
 
+  fullpath = path.resolve(fullpath);
   return fullpath;
 }
 
