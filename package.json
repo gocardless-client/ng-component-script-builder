@@ -11,7 +11,7 @@
     "generate-angular-css-module": "git://github.com/gocardless-client/generate-angular-css-module.git",
     "html-minifier": "~0.5.5",
     "clean-css": "~2.0.7",
-    "node-sass": "~0.6.6",
+    "node-sass": "~0.8.1",
     "lodash": "~2.4.1",
     "iconv-lite": "~0.2.11"
   },
